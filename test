@@ -1,0 +1,54 @@
+---
+- name: Дистанционно добавление произвольных учетных записей с Ansible на узлы
+  hosts: test_servers
+  become_method: sudo
+  become_user: root
+
+  tasks:
+  - name: Убедимся, что у нас на узлах есть группа "wheel"
+    group:
+      name: wheel
+      state: present
+
+  - name: Разрешим пользователям группы "wheel" иметь sudo без пароля
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%wheel'
+      line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+      validate: visudo -cf %s
+
+  - name: Создадим пользователя myrzik и поместим его в группу "wheel"
+    ansible.builtin.user:
+      name: myrzik
+      comment: Cat Myrzik
+      group: wheel
+
+  - name: Создадим bash пользователя myrzik
+    ansible.builtin.user:
+      name: myrzik
+      shell: /bin/bash
+
+  - name: Создадим домашнюю папку пользователя myrzik
+    ansible.builtin.user:
+
+
+  - name: Пробросим публичный ключ пользователя myrzik с Ansible
+    authorized_key:
+      user: myrzik
+      state: present
+      key: "{{ lookup('file', '/home/myrzik/.ssh/id_rsa.pub') }}"
+      path: /home/myrzik/.ssh/authorized_keys
+
+  - name: Создадим пользователя barsik и поместим его в группу "wheel"
+    ansible.builtin.user:
+      name: barsik
+      comment: Cat Barsik
+      group: wheel
+
+  - name: Пробросим публичный ключ пользователя barsik с Ansible
+    authorized_key:
+      user: barsik
+      state: present
+      key: "{{ lookup('file', '/home/barsik/.ssh/id_rsa.pub') }}"
+      path: /home/barsik/.ssh/authorized_keys
